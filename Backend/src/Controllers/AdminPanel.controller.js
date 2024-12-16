@@ -135,6 +135,22 @@ const updatepackage=asynchandler(async(req,res)=>{
 });
 
 const getallpackages=asynchandler(async(req,res)=>{
+   
+    let packages;
+    try {
+        packages=await Tourpackage.find({});
+    } catch (error) {
+        throw new ApiError(500,"Error while retriving tourpackages")
+    }
+    if (!packages){
+        throw new ApiError(203,"No packages")
+    }
+    res.status(200).json(
+        new ApiResponse(200,packages,"Packages retrived successfully")
+    )
+
+})
+const getallpackagesofadminowned=asynchandler(async(req,res)=>{
     const admin=req.user;
    
     let packages;
@@ -149,10 +165,6 @@ const getallpackages=asynchandler(async(req,res)=>{
     res.status(200).json(
         new ApiResponse(200,packages,"Packages retrived successfully")
     )
-
-
-
-
 
 })
 const getbookings = asynchandler(async (req, res) => {
@@ -242,7 +254,7 @@ const getbookings = asynchandler(async (req, res) => {
     });
 });
 
-export {getallpackages,addpackage,deletepackage,togglepackagepublishstatus,updatepackage,getbookings}
+export {getallpackages,addpackage,deletepackage,togglepackagepublishstatus,updatepackage,getbookings,getallpackagesofadminowned}
 
 
 
