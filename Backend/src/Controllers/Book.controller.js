@@ -14,8 +14,8 @@ const CustomerdetailsSchema=z.object({
 
 
 const booktour=asynchandler(async(req,res)=>{
-    const tourid=req.params;
-
+    const {id}=req.params;
+    
     const {NumberofTravellers,Customerdetails,specialrequest}=req.body;
     if(!(NumberofTravellers && Customerdetails)){
         throw new ApiError(400,"Fill all the details");
@@ -28,7 +28,7 @@ const booktour=asynchandler(async(req,res)=>{
         }
     })
 
-    const tour= await Tourpackage.findById(tourid);
+    const tour= await Tourpackage.findById(id);
     if(!tour || !tour.isPublic){
         throw new ApiError(404,"Tour Package doesn't exists")
     }
@@ -37,6 +37,8 @@ const booktour=asynchandler(async(req,res)=>{
     if(tour.Availability<NumberofTravellers){
         throw new ApiError(204,"No Seats Available to Book")
     }
+
+    
 
    const Booking= await bookings.create({
         BookedBy:user,
@@ -49,7 +51,9 @@ const booktour=asynchandler(async(req,res)=>{
         throw new ApiError(500,"Error while Booking the package")
     }
     tour.Availability-=NumberofTravellers;
-    tour.save({validateBeforeSave:false})
+    tour.save({validateBeforeSave:false});
+    user.Bookings.push(Booking);
+    user.save({validateBeforeSave:false});
     res.status(201).json(
         new ApiResponse(201,Booking,"Tour Booked Successfully")
     )
@@ -59,17 +63,17 @@ const booktour=asynchandler(async(req,res)=>{
 })
 
 const CancelTour=asynchandler(async(req,res)=>{
-    const existbookingid=req.params;
+    const {id}=req.params;
 
-    const existbooking=await bookings.findById(existbookingid);
-    if(!existbooking){
+    const existbooking=await bookings.findById(id);
+    if(!id){
         throw new ApiError(404,"Booking Doesn't exist")
     }
 
     const tourid=existbooking.Tourpackage._id;
 try {
     
-    await bookings.findByIdAndDelete(existbookingid)
+    await bookings.findByIdAndDelete(id)
         await Tourpackage.findByIdAndUpdate(tourid,{
             $set:{
                 Availability:Availability-existbooking.NumberofTravellers
@@ -89,13 +93,13 @@ res.status(200).json(
 
 const getbookingdetails=asynchandler(async(req,res)=>{
     const user=req.user;
-    const existbookingid=req.params;
-    const existbooking=await bookings.findById(existbookingid);
+    const id=req.params;
+    const existbooking=await bookings.findById(id);
     if(!existbooking){
         throw new ApiError(404,"Booking Doesn't exist")
     }
 
-    const details=await bookings.findOne({_id:existbookingid,BookedBy:user});
+    const details=await bookings.findOne({_id:id,BookedBy:user});
     if(!details){
         throw new ApiError(401,"Unauthorized Request")
     }
@@ -103,3 +107,6 @@ const getbookingdetails=asynchandler(async(req,res)=>{
         new ApiResponse(200,details,"Details fetched Successfully")
     )
 })
+
+
+export {booktour,CancelTour,getbookingdetails}

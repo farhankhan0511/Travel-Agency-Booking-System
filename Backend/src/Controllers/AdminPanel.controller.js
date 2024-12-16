@@ -6,6 +6,11 @@ import { asynchandler } from "../utils/asynchandler";
 
 const addpackage=asynchandler(async(req,res)=>{
     // post request to add an new tour package for the given admin
+    const admin=req.user;
+    if(!admin.isPublic){
+        throw new ApiError(403,"Forbidden Request")
+    }
+    
     const {Title,Description,Price,start,end,Availability}=req.body;
 
     const Imagepath=req.file?.path
@@ -41,7 +46,7 @@ const addpackage=asynchandler(async(req,res)=>{
 
 const deletepackage=asynchandler(async(req,res)=>{
     //delete request to delete to an existing package
-    const id=req.params
+    const {id}=req.params
 
     const tpackage=await Tourpackage.findById(id)
     if(!tpackage){
@@ -63,19 +68,20 @@ const deletepackage=asynchandler(async(req,res)=>{
 
 const togglepackagepublishstatus=asynchandler(async(req,res)=>{
     // post request to toggle package public status
-    const id=req.params
+    const {id}=req.params
     const tourpackage=await Tourpackage.findById(id)
     if(!tourpackage){
         throw new ApiError(404,"Package doesn't exist")
     }
-    tourpackage.isPublic=true;
+    tourpackage.isPublic=!tourpackage.isPublic;
     tourpackage.save({validateBeforeSave:false});
+
     res.status(200,{},"Status flipped Successfully")
 })
 
 const updatepackage=asynchandler(async(req,res)=>{
     // put request to update the existing package
-    const id=req.params;
+    const {id}=req.params;
     const tourpackage=await Tourpackage.findById(id);
     if(!tourpackage){
         throw new ApiError(404,"Package doesn't exist");
@@ -103,9 +109,31 @@ const updatepackage=asynchandler(async(req,res)=>{
     );
 });
 
+const getallpackages=asynchandler(async(req,res)=>{
+    admin=req.user;
+    
+    let packages;
+    try {
+        packages=await Tourpackage.find({Admin:admin});
+    } catch (error) {
+        throw new ApiError(500,"Error while retriving tourpackages")
+    }
+    if (!packages){
+        throw new ApiError(203,"No packages")
+    }
+    res.status(200).json(
+        new ApiResponse(200,packages,"Packages retrived successfully")
+    )
+
+
+
+
+
+})
+
 const getbookings=asynchandler(async(req,res)=>{
 
-    const id=req.params
+    const {id}=req.params
     const tourpackage=await Tourpackage.findById(id);
     if(!tourpackage){
         throw new ApiError(404,"Package doesn't exist");
@@ -124,6 +152,10 @@ if(!tBookings ){
 }
 res.status(302,tBookings,"Bookings fetched Successfully")
 });
+
+export {getallpackages,addpackage,deletepackage,togglepackagepublishstatus,updatepackage,getbookings}
+
+
 
 
 

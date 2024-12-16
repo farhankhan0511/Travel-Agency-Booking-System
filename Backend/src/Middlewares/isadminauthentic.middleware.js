@@ -4,17 +4,17 @@ import { asynchandler } from "../utils/asynchandler";
 
 export const isadminauthentic=asynchandler(async(req,res,next)=>{
 
-    const tourid=req.params;
+    const {id}=req.params;
     
     const user=req.user;
     
     try {
-        const tour=await Tourpackage.findOne({_id:tourid,Admin:user})
+        const tour=await Tourpackage.findOne({_id:id,Admin:user})
        
     } catch (error) {
-        new ApiError(402,error.message || "Unauthorized request")
+        throw new ApiError(402,error.message || "Unauthorized request")
     } if(!tour){
-        new ApiError(402,"Unauthorized request")
+        throw new ApiError(402,"Unauthorized request")
     }
     next();
 

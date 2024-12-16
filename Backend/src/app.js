@@ -14,5 +14,9 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 import userRouter from "./Routes/User.Routes.js"
-app.use("/user",userRouter)
+import adminRouter from "./Routes/Admin.Routes.js"
+import bookRouter from "./Routes/Book.routes.js"
+app.use("/user",userRouter);
+app.use("/admin",adminRouter);
+app.use("/book",bookRouter);
 export default app;
