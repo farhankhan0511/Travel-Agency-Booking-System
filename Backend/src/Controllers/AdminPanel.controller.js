@@ -6,7 +6,7 @@ import { asynchandler } from "../utils/asynchandler";
 
 const addpackage=asynchandler(async(req,res)=>{
     // post request to add an new tour package for the given admin
-    const {Title,Description,Price,start,end}=req.body;
+    const {Title,Description,Price,start,end,Availability}=req.body;
 
     const Imagepath=req.file?.path
     console.log(Imagepath)
@@ -27,7 +27,7 @@ const addpackage=asynchandler(async(req,res)=>{
         throw new ApiError(401,"Tour Package already exists");
     }
     const tourpackage= await Tourpackage.create({Title,Description,Price,Image,Available_dates:{
-        start:start,end:end},Admin:req.user,isPublic:true})
+        start:start,end:end},Admin:req.user,isPublic:true,Availability:Availability})
     
     if(!tourpackage){
         throw new ApiError(500,"Error while creating the package")
@@ -111,17 +111,20 @@ const getbookings=asynchandler(async(req,res)=>{
         throw new ApiError(404,"Package doesn't exist");
     }
 
-    await bookings.aggregate([{
+    const tBookings=await bookings.aggregate([{
         $match:{
-            Tourpackage:tourpackage
+            Tourpackage:tourpackage,
+            Admin:req.user
         }        
-    },{
-        
     }
-])
+]);    
 
-
+if(!tBookings ){
+    throw new ApiError(204,"NO Bookings")
+}
+res.status(302,tBookings,"Bookings fetched Successfully")
 });
 
 
-// const 
+
+

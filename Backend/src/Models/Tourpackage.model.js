@@ -41,6 +41,10 @@ const TourpackageSchema=new mongoose.Schema({
         type:Boolean,
         default:true,
         required:true
+    },
+    Availability:{
+        type:Number,
+        required:true        
     }
 
 },{timestamps:true})

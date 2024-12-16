@@ -15,7 +15,7 @@ const CustomerDetailSchema = new mongoose.Schema({
         type:String,
         requried:true
     },
-    email: {
+    phone: {
         type: String,
         required: true,
     },

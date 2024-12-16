@@ -1,33 +1,40 @@
 
 import {asynchandler} from "../utils/asynchandler.js"
 import validator from "validator"
+import { z } from "zod"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import { User } from "../Models/User.model.js"
 import { removefromcloud, uploadfileoncloud } from "../utils/FileUpload.js"
 
+const UserSChema=z.object({
+    username:z.string(),
+    Name:z.string(),
+    isadmin:z.boolean(),
+    email:z.string().email(),
+    password:z.string().regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/, 
+        "Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, and one digit",
+   )
+})
 
 const registerUser=asynchandler(async(req,res)=>{
-    
-
-        const {username,email,password,Name,}=req.body
+        let validdata;
+        try {
+            
+            validdata=UserSChema.parse(req.body)
+            
+        } catch (err) {
+            throw new ApiError(400,err.message || "Fill the form correctly")
+        }
         
-        if (!validator.isAlphanumeric(username)) 
-            {throw new ApiError(401,"Username should contain alphanuemric characters only")}
-        if (!validator.isAlpha(Name)) 
-            {throw new ApiError(401,"Name should contain alphbetic characters only")}
-        if(!validator.isEmail(email)){throw new ApiError(401,"Invalid Email format")}
-        if(!validator.isStrongPassword(password,{minSymbols:1,minLength:8,minNumbers:1})-1)
-             {throw new ApiError(401,"Password must contain of 8 length with atleast 1 Symbol and 1 number")}
-       
             const existeduser=await User.findOne({
-                $or:[{username},{email}]
+                $or:[{username:validdata.username},{email:validdata.email}]
             })
             if(existeduser){ 
                 throw new ApiError(400,"User with email or username already exists")
             }
             const user=await User.create({
-                username:username.toLowerCase(),email,password,Name,isadmin:false
+                username:validdata.username.toLowerCase(),email:validdata.email,password:validdata.password,Name:validdata.Name,isadmin:false
             })
           
             const createduser=await User.findById(user._id).select("-password -refreshtoken")
@@ -220,8 +227,37 @@ const deleteAccount=asynchandler(async(req,res)=>{
     }
 
 });
+const registerAdmin=asynchandler(async(req,res)=>{
+    let validdata;
+    try {
+        
+        validdata=UserSChema.parse(req.body)
+        
+    } catch (err) {
+        throw new ApiError(400,err.message || "Fill the form correctly")
+    }
+    
+        const existeduser=await User.findOne({
+            $or:[{username:validdata.username},{email:validdata.email}]
+        })
+        if(existeduser){ 
+            throw new ApiError(400,"User with email or username already exists")
+        }
+        const user=await User.create({
+            username:validdata.username.toLowerCase(),email:validdata.email,password:validdata.password,Name:validdata.Name,isadmin:true
+        })
+      
+        const createduser=await User.findById(user._id).select("-password -refreshtoken")
+     
+        if(!createduser){
+            throw new ApiError(500,"Something went wrong while signing up the user")
+            
+        }
+        return res.status(201).json(
+            new ApiResponse(201,createduser,"User Registered Successfully")
+        )
+        
 
+})
 
-
-
-export {registerUser,deleteAccount,logout,userlogin,editpfp,Updatepassword,getcurrentUser,}
+export {registerUser,deleteAccount,logout,userlogin,editpfp,Updatepassword,getcurrentUser,registerAdmin}
