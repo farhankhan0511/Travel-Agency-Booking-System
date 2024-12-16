@@ -1,8 +1,9 @@
-import { bookings } from "../Models/Bookings.model";
-import { Tourpackage } from "../Models/Tourpackage.model";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { asynchandler } from "../utils/asynchandler";
+import { bookings } from "../Models/Bookings.model.js";
+import { Tourpackage } from "../Models/Tourpackage.model.js";
+import { User } from "../Models/User.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asynchandler } from "../utils/asynchandler.js";
 import {z} from "zod"
 
 const CustomerdetailsSchema=z.object({
@@ -16,6 +17,16 @@ const CustomerdetailsSchema=z.object({
 const booktour=asynchandler(async(req,res)=>{
     const {id}=req.params;
     
+    const user=req.user;
+    const tour= await Tourpackage.findById(id);
+    if(!tour || !tour.isPublic){
+        throw new ApiError(404,"Tour Package doesn't exists")
+    }
+    const existingbooking=await bookings.findOne({BookedBy:user,Tourpackage:tour})
+    if(existingbooking){
+        throw new ApiError(400,"Booking already exists")
+    }
+    
     const {NumberofTravellers,Customerdetails,specialrequest}=req.body;
     if(!(NumberofTravellers && Customerdetails)){
         throw new ApiError(400,"Fill all the details");
@@ -28,11 +39,8 @@ const booktour=asynchandler(async(req,res)=>{
         }
     })
 
-    const tour= await Tourpackage.findById(id);
-    if(!tour || !tour.isPublic){
-        throw new ApiError(404,"Tour Package doesn't exists")
-    }
-    const user=req.user;
+    
+    
 
     if(tour.Availability<NumberofTravellers){
         throw new ApiError(204,"No Seats Available to Book")
@@ -50,10 +58,14 @@ const booktour=asynchandler(async(req,res)=>{
     if(!Booking){
         throw new ApiError(500,"Error while Booking the package")
     }
-    tour.Availability-=NumberofTravellers;
-    tour.save({validateBeforeSave:false});
-    user.Bookings.push(Booking);
-    user.save({validateBeforeSave:false});
+    await Tourpackage.findByIdAndUpdate(
+        tour._id,
+        { $inc: { Availability: -NumberofTravellers } }
+    );
+    await User.findByIdAndUpdate(
+        user._id,
+        { $push: { Bookings: Booking } }
+    );
     res.status(201).json(
         new ApiResponse(201,Booking,"Tour Booked Successfully")
     )
@@ -66,19 +78,20 @@ const CancelTour=asynchandler(async(req,res)=>{
     const {id}=req.params;
 
     const existbooking=await bookings.findById(id);
-    if(!id){
+    if(!existbooking){
         throw new ApiError(404,"Booking Doesn't exist")
     }
-
-    const tourid=existbooking.Tourpackage._id;
+    console.log(existbooking)
+    const tourid=existbooking?.Tourpackage?._id;
+    let increment=0;
+    increment=existbooking.NumberofTravellers
 try {
     
+    await Tourpackage.findByIdAndUpdate(
+        tourid,
+        { $inc: { Availability:increment } }
+    );
     await bookings.findByIdAndDelete(id)
-        await Tourpackage.findByIdAndUpdate(tourid,{
-            $set:{
-                Availability:Availability-existbooking.NumberofTravellers
-            }
-        })
 } catch (error) {
     throw new ApiError(500,error.message || "Something went wrong while cancelling the tour")
 }
@@ -93,13 +106,14 @@ res.status(200).json(
 
 const getbookingdetails=asynchandler(async(req,res)=>{
     const user=req.user;
-    const id=req.params;
+    const {id}=req.params;
+    console.log(id)
     const existbooking=await bookings.findById(id);
     if(!existbooking){
         throw new ApiError(404,"Booking Doesn't exist")
     }
-
-    const details=await bookings.findOne({_id:id,BookedBy:user});
+    console.log(existbooking)
+    const details=await bookings.find({_id:id,BookedBy:user});
     if(!details){
         throw new ApiError(401,"Unauthorized Request")
     }

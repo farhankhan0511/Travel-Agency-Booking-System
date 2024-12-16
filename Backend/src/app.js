@@ -16,7 +16,7 @@ app.use(cookieParser());
 import userRouter from "./Routes/User.Routes.js"
 import adminRouter from "./Routes/Admin.Routes.js"
 import bookRouter from "./Routes/Book.routes.js"
-app.use("/user",userRouter);
-app.use("/admin",adminRouter);
-app.use("/book",bookRouter);
+app.use("/api/v1/user",userRouter);
+app.use("/api/v1/admin",adminRouter);
+app.use("/api/v1/booking",bookRouter);
 export default app;

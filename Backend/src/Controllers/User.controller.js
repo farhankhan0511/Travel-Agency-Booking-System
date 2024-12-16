@@ -1,6 +1,6 @@
 
 import {asynchandler} from "../utils/asynchandler.js"
-import validator from "validator"
+
 import { z } from "zod"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
