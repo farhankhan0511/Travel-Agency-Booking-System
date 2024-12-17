@@ -91,7 +91,9 @@ const userlogin=asynchandler(async(req,res)=>{
 
     const options={
         httpOnly:true,
-        secure:true
+        secure:false,
+        sameSite:"None",
+        path:"/"
     }
 
     

@@ -8,10 +8,11 @@ import Header from './components/Header';
 import Login from './components/Login';
 import Body from './components/Body';
 import Browse from './components/Browse';
+import Tourbook from './components/Tourbook';
 
 
 const App=()=>{
-  return <div>
+  return <div className=' bg-gray-900 h-screen'>
      <Provider store={appstore}>
      <Header></Header>
      
@@ -37,7 +38,8 @@ export const appRouter=createBrowserRouter([
       element:<Browse/>      
     },
     {
-      path:"/book/:id"
+      path:"/book/:id",
+      element:<Tourbook/>
     }
   ]
   //   {

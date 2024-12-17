@@ -10,6 +10,7 @@
     "firebase": "^11.0.2",
     "formik": "^2.4.6",
     "frontend": "file:",
+    "jspdf": "^2.5.2",
     "netflix-gpt": "file:",
     "openai": "^4.72.0",
     "react": "^18.3.1",

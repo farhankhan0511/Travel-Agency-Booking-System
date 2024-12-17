@@ -7,6 +7,7 @@ import { url } from '../utils/constant';
 import { useDispatch } from 'react-redux';
 import { addUser } from '../utils/userSlice';
 import { useNavigate } from 'react-router-dom';
+import { addaccesstoken } from '../utils/accesstokenSlice';
 
 const SignInSignUpForm = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -47,6 +48,7 @@ const SignInSignUpForm = () => {
     }
     console.log(data);
     dispatch(addUser(data?.data?.user));
+    dispatch(addaccesstoken(data?.data?.accesstoken))
     navigate('/browse');
   };
 

@@ -15,61 +15,73 @@ const CustomerdetailsSchema=z.object({
 
 
 const booktour=asynchandler(async(req,res)=>{
-    const {id}=req.params;
-    
-    const user=req.user;
-    const tour= await Tourpackage.findById(id);
-    if(!tour || !tour.isPublic){
-        throw new ApiError(404,"Tour Package doesn't exists")
-    }
-    const existingbooking=await bookings.findOne({BookedBy:user,Tourpackage:tour})
-    if(existingbooking){
-        throw new ApiError(400,"Booking already exists")
-    }
-    
-    const {NumberofTravellers,Customerdetails,specialrequest}=req.body;
-    if(!(NumberofTravellers && Customerdetails)){
-        throw new ApiError(400,"Fill all the details");
-    }
-    Customerdetails.map((customer)=>{
-        try {            
-            CustomerdetailsSchema.parse(customer)
-        } catch (err) {
-            throw new ApiError(400,"Fill Customer Details Properly")
+    try {
+        console.log("Incoming Request:", req.body);
+        const {id}=req.params;
+        
+        const user=req.user;
+        const tour= await Tourpackage.findById(id);
+        if(!tour || !tour.isPublic){
+            throw new ApiError(404,"Tour Package doesn't exists")
         }
-    })
-
+        const existingbooking=await bookings.findOne({BookedBy:user,Tourpackage:tour})
+        if(existingbooking){
+            console.log("here")
+            return res.status(400).json(new ApiError(400,"Booking already exists"))
+            // throw new ApiError(400,"Booking already exists")
+            
+        }
+        
+        const {NumberofTravellers,Customerdetails,specialrequest}=req.body;
+        if(!(NumberofTravellers && Customerdetails)){
+            throw new ApiError(400,"Fill all the details");
+        }
+        for (const [index, customer] of Customerdetails.entries()) {
+            const result = CustomerdetailsSchema.safeParse(customer);
+            if (!result.success) {
+              const errorMessage = result.error.errors
+                .map((err) => `${err.path.join(".")}: ${err.message}`)
+                .join("; ");
+              throw new ApiError(400, `Error in customer ${index + 1}: ${errorMessage}`);
+            }
+          }
+        
     
+        
+        
     
-
-    if(tour.Availability<NumberofTravellers){
-        throw new ApiError(204,"No Seats Available to Book")
+        if(tour.Availability<NumberofTravellers){
+            throw new ApiError(204,"No Seats Available to Book")
+        }
+    
+        
+    
+       const Booking= await bookings.create({
+            BookedBy:user,
+            Tourpackage:tour,
+            NumberofTravellers:NumberofTravellers,
+            Customerdetails:Customerdetails,
+            specialrequest:specialrequest
+        })
+        if(!Booking){
+            throw new ApiError(500,"Error while Booking the package")
+        }
+        await Tourpackage.findByIdAndUpdate(
+            tour._id,
+            { $inc: { Availability: -NumberofTravellers } }
+        );
+        await User.findByIdAndUpdate(
+            user._id,
+            { $push: { Bookings: Booking } }
+        );
+        res.status(201).json(
+            new ApiResponse(201,Booking,"Tour Booked Successfully")
+        )
+    
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
-
-    
-
-   const Booking= await bookings.create({
-        BookedBy:user,
-        Tourpackage:tour,
-        NumberofTravellers:NumberofTravellers,
-        Customerdetails:Customerdetails,
-        specialrequest:specialrequest
-    })
-    if(!Booking){
-        throw new ApiError(500,"Error while Booking the package")
-    }
-    await Tourpackage.findByIdAndUpdate(
-        tour._id,
-        { $inc: { Availability: -NumberofTravellers } }
-    );
-    await User.findByIdAndUpdate(
-        user._id,
-        { $push: { Bookings: Booking } }
-    );
-    res.status(201).json(
-        new ApiResponse(201,Booking,"Tour Booked Successfully")
-    )
-
 
 
 })
