@@ -3,54 +3,70 @@ import { Provider } from 'react-redux';
 import './App.css';
 
 import appstore from './utils/appstore';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import Header from './components/Header';
+import Login from './components/Login';
+import Body from './components/Body';
+import Browse from './components/Browse';
 
 
+const App=()=>{
+  return <div>
+     <Provider store={appstore}>
+     <Header></Header>
+     
+     <Outlet/>
+     
+     </Provider>
+
+  </div>
+}
 
 
 export const appRouter=createBrowserRouter([
   {path:"/",
-    element:<Applayout/>,
+    element:<App/>,
     children:[ 
       {path:"/",
-        element:<Body/>},
-      {path:"/About",
-      element:<About/>
+        element:<Navigate to="/browse"/>},
+      {path:"/signin",
+      element:<Login/>
       
     },
-    {
-      path:"/Contact",
-      element:<Contact/>
+    {path:"/browse",
+      element:<Browse/>      
     },
     {
-      path:"/admin",
-      element:<Admin/>,
-      children:[
-        {
-          path:"/:id",
-          element:<Tourmanage/>
-        }
-      ]
+      path:"/book/:id"
+    }
+  ]
+  //   {
+  //     path:"/Contact",
+  //     element:<Contact/>
+  //   },
+  //   {
+  //     path:"/admin",
+  //     element:<Admin/>,
+  //     children:[
+  //       {
+  //         path:"/:id",
+  //         element:<Tourmanage/>
+  //       }
+  //     ]
         
     
-    },{
-      path:"/bookings/:id",
-      element:<Restaurantfullmenu/>
+  //   },{
+  //     path:"/bookings/:id",
+  //     element:<Restaurantfullmenu/>
     
-    },
-  ], 
-    errorElement:<Error/>
-  }
+  //   },
+  // ], 
+  //   errorElement:<Error/>
+  //
+   }
  
 
 ])
 
-
-
-function App() {
-  return <Provider store={appstore}>
-    
-  
-</Provider>;
-}
 
 export default App;
