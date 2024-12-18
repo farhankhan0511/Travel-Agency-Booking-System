@@ -1,13 +1,15 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import serverless from "serverless-http"
 
 const app=express()
 app.use(cors({
     origin:process.env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
     credentials:true
 }))
-app.options('*', cors());''
+app.options('*', cors());
 
 app.use(express.json({limit:"16kb"}));
 app.use(express.urlencoded({limit:"16kb",extended:true}));
@@ -17,9 +19,11 @@ app.use(cookieParser());
 import userRouter from "./Routes/User.Routes.js"
 import adminRouter from "./Routes/Admin.Routes.js"
 import bookRouter from "./Routes/Book.routes.js"
-import { getallpackages } from "./Controllers/AdminPanel.controller.js"
+import { getallpackages } from "../Controllers/AdminPanel.controller.js"
 app.use("/api/v1/user",userRouter);
 app.use("/api/v1/admin",adminRouter);
 app.use("/api/v1/booking",bookRouter);
 app.get("/api/v1/all", getallpackages);
+
 export default app;
+export const handler = serverless(app);
