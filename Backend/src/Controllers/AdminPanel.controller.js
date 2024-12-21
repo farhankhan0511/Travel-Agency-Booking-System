@@ -10,36 +10,36 @@ const addpackage=asynchandler(async(req,res)=>{
     // post request to add an new tour package for the given admin
     const admin=req.user;
     if(!admin.isadmin){
-        throw new ApiError(403,"Forbidden Request")
-    }
+        return res.status(400).json( new ApiError(403,"Forbidden Request")
+    )}
     
     const {Title,Description,Price,start,end,Availability}=req.body;
 
     const Imagepath=req.file?.path
     // console.log(Imagepath)
     if (!Imagepath){
-        throw new ApiError(400,"Invalid Path of image")        
-    }
+        return res.status(400).json( new ApiError(400,"Invalid Path of image")        
+    )}
     const Image=await uploadfileoncloud(Imagepath)
 
     // console.log(Image)
     if(!Image?.url){
-        throw new ApiError(500,"Error while uploading to cloud")
-    }
+        return res.status(400).json( new ApiError(500,"Error while uploading to cloud")
+    )}
 
 
     const existingtour=await Tourpackage.findOne({Title:Title})
     
     if(existingtour){
-        throw new ApiError(401,"Tour Package already exists");
-    }
+        return res.status(400).json( new ApiError(401,"Tour Package already exists")
+    )}
     const tourpackage= await Tourpackage.create({Title,Description,Price,Image:Image.public_id,Available_dates:{
         start:start,end:end},Admin:admin,isPublic:true,Availability:Availability})
     
     if(!tourpackage){
-        throw new ApiError(500,"Error while creating the package")
-    }
-    res.status(201).json(
+        return res.status(400).json( new ApiError(500,"Error while creating the package")
+    )}
+    return res.status(201).json(
         new ApiResponse(201,tourpackage,"Tour package added Successfully")
     )
 
@@ -52,15 +52,15 @@ const deletepackage=asynchandler(async(req,res)=>{
 
     const tpackage=await Tourpackage.findById(id)
     if(!tpackage){
-        throw new ApiError(404,"Package doesn't exist")
-    }
+        return res.status(400).json( new ApiError(404,"Package doesn't exist")
+    )}
     try {
         await Tourpackage.findByIdAndDelete(tpackage._id)
         
     } catch (err) {
-        throw new ApiError(500,"Error while deleting the package")
-    }
-    res.status(203).json(
+        return res.status(400).json( new ApiError(500,"Error while deleting the package")
+    )}
+    return res.status(203).json(
         new ApiResponse(203,{},"Package deleted Successfully!!!!!")
     )
 
@@ -68,7 +68,7 @@ const deletepackage=asynchandler(async(req,res)=>{
 
 })
 
-const togglepackagepublishstatus = asynchandler(async (req, res) => {
+const togglepackagepublishstatus = asynchandler(async (req,res) => {
     const { id } = req.params;
   
     // Perform the toggle in a single query
@@ -79,10 +79,10 @@ const togglepackagepublishstatus = asynchandler(async (req, res) => {
     );
   
     if (!updatedPackage) {
-      throw new ApiError(404, "Package doesn't exist");
-    }
+      return res.status(400).json( new ApiError(404, "Package doesn't exist")
+  )  }
   
-    res.status(200).json(
+    return res.status(200).json(
       new ApiResponse(200, updatedPackage, "Status flipped successfully")
     );
   });
@@ -93,8 +93,8 @@ const updatepackage=asynchandler(async(req,res)=>{
     const {id}=req.params;
     const tourpackage=await Tourpackage.findById(id);
     if(!tourpackage){
-        throw new ApiError(404,"Package doesn't exist");
-    }
+        return res.status(400).json( new ApiError(404,"Package doesn't exist")
+    )}
     const {Title,Description,Price,start,end,Availability}=req.body;
     const Imagepath=req.file?.path
     let Image;
@@ -124,12 +124,12 @@ const updatepackage=asynchandler(async(req,res)=>{
           new:true,runValidators:true
       });
   } catch (error) {
-    throw new ApiError(500,error.message || "Error while updating")
-  }
+    return res.status(400).json( new ApiError(500,error.message || "Error while updating")
+)  }
     if(!updatepack){
-        throw  new ApiError(500,"Error while updating the package")
-    }
-    res.status(201).json(
+        return res.status(400).json(  new ApiError(500,"Error while updating the package")
+    )}
+    return res.status(201).json(
         new ApiResponse(201,updatepack,"Package updated Successfully")
     );
 });
@@ -140,12 +140,12 @@ const getallpackages=asynchandler(async(req,res)=>{
     try {
         packages=await Tourpackage.find({});
     } catch (error) {
-        throw new ApiError(500,"Error while retriving tourpackages")
-    }
+        return res.status(400).json( new ApiError(500,"Error while retriving tourpackages")
+    )}
     if (!packages){
-        throw new ApiError(203,"No packages")
-    }
-    res.status(200).json(
+        return res.status(400).json( new ApiError(203,"No packages")
+    )}
+    return res.status(200).json(
         new ApiResponse(200,packages,"Packages retrived successfully")
     )
 
@@ -157,12 +157,12 @@ const getallpackagesofadminowned=asynchandler(async(req,res)=>{
     try {
         packages=await Tourpackage.find({Admin:admin});
     } catch (error) {
-        throw new ApiError(500,"Error while retriving tourpackages")
-    }
+        return res.status(400).json( new ApiError(500,"Error while retriving tourpackages")
+    )}
     if (!packages){
-        throw new ApiError(203,"No packages")
-    }
-    res.status(200).json(
+        return res.status(400).json( new ApiError(203,"No packages")
+    )}
+    return res.status(200).json(
         new ApiResponse(200,packages,"Packages retrived successfully")
     )
 
@@ -173,8 +173,8 @@ const getbookings = asynchandler(async (req, res) => {
 
     const tourpackage = await Tourpackage.findById(id);
     if (!tourpackage) {
-        throw new ApiError(404, "Package doesn't exist");
-    }
+        return res.status(400).json( new ApiError(404, "Package doesn't exist")
+    )}
 
     const tBookings = await bookings.aggregate([
         {
@@ -244,10 +244,10 @@ const getbookings = asynchandler(async (req, res) => {
     ]);
 
     if (tBookings.length === 0) {
-        throw new ApiError(204, "No Bookings found for this tour package.");
-    }
+        return res.status(400).json( new ApiError(204, "No Bookings found for this tour package.")
+    )}
 
-    res.status(200).json({
+    return res.status(200).json({
         status: 200,
         data: tBookings,
         message: "Bookings fetched successfully",

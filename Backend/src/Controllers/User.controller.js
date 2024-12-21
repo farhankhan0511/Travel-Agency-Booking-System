@@ -24,15 +24,15 @@ const registerUser=asynchandler(async(req,res)=>{
             validdata=UserSChema.parse(req.body)
             
         } catch (err) {
-            throw new ApiError(400,err.message || "Fill the form correctly")
-        }
+            return res.status(400).json( new ApiError(400,err.message || "Fill the form correctly")
+        )}
         
             const existeduser=await User.findOne({
                 $or:[{username:validdata.username},{email:validdata.email}]
             })
             if(existeduser){ 
-                throw new ApiError(400,"User with email or username already exists")
-            }
+                return res.status(400).json( new ApiError(400,"User with email or username already exists")
+            )}
             const user=await User.create({
                 username:validdata.username.toLowerCase(),email:validdata.email,password:validdata.password,Name:validdata.Name,isadmin:validdata.isadmin
             })
@@ -40,8 +40,8 @@ const registerUser=asynchandler(async(req,res)=>{
             const createduser=await User.findById(user._id).select("-password -refreshtoken")
          
             if(!createduser){
-                throw new ApiError(500,"Something went wrong while signing up the user")
-                
+                return res.status(400).json( new ApiError(500,"Something went wrong while signing up the user")
+            )    
             }
             return res.status(201).json(
                 new ApiResponse(201,createduser,"User Registered Successfully")
@@ -63,8 +63,8 @@ const generateaccesandrefreshtoken=async(user_id)=>{
     
             return {accesstoken,refreshtoken}
     } catch (error) {
-        throw new ApiError(500,"Error while generating tokens")
-    }
+        return res.status(400).json( new ApiError(500,"Error while generating tokens")
+    )}
    
 }
 
@@ -74,17 +74,17 @@ const userlogin=asynchandler(async(req,res)=>{
    
 
     if(!(username || email)){
-        throw new ApiError(401,"Invalid username and email")
-    }
+        return res.status(400).json( new ApiError(401,"Invalid username and email")
+    )}
     const user=await User.findOne({$or:[{username},{email}]})
     if (!user){
-        throw new ApiError(400,"User Not Found")
-    }
+        return res.status(400).json( new ApiError(400,"User Not Found")
+    )}
     const validpassword= await user.isPasswordCorrect(password)
    
     if(!validpassword){
-        throw new ApiError(401,"Invalid Password")
-
+        return res.status(400).json( new ApiError(401,"Invalid Password")
+)
     }
     const {accesstoken,refreshtoken}=await generateaccesandrefreshtoken(user._id)
     const loggedinuser=await User.findById(user._id).select("-password -refreshtoken")
@@ -128,24 +128,24 @@ const logout=asynchandler(async(req,res)=>{
             new ApiResponse(200,{},"User Logout Successfull")
         )
     } catch (err) {
-        throw new ApiError(500,"Something went wrong while logouting")
-    }
+        return res.status(400).json( new ApiError(500,"Something went wrong while logouting")
+    )}
 })
 
 const refreshAccesstoken=asynchandler(async(req,res)=>{
     const incomrefreshtoken=req.cookies.refreshtoken || req.body.refreshtoken
     if(!incomrefreshtoken){
-        throw new ApiError(400,"Unauthorized request")
-    }
+        return res.status(400).json( new ApiError(400,"Unauthorized request")
+    )}
     try{
         const decode=await jwt.verify(incomrefreshtoken,process.env.REFRESH_TOKEN_SECRET)
         const user=await User.findById(decode?._id)
         if(!user){
-            throw new ApiError(401,"Unauthorized request")
-        }
+            return res.status(400).json( new ApiError(401,"Unauthorized request")
+        )}
         if (incomrefreshtoken!==user?.refreshtoken){
-            throw new ApiError(400,"Refresh Token expired")
-
+            return res.status(400).json( new ApiError(400,"Refresh Token expired")
+)
         }
         options={
             httpOnly:true,secure:true
@@ -156,8 +156,8 @@ const refreshAccesstoken=asynchandler(async(req,res)=>{
         )
     }
     catch(err){
-        throw new ApiError(500,"SOmething wrong while refershing tokens")
-    }
+        return res.status(400).json( new ApiError(500,"SOmething wrong while refershing tokens")
+    )}
 
 
 })
@@ -170,13 +170,13 @@ const getcurrentUser=asynchandler(async(req,res)=>{
 const Updatepassword=asynchandler(async(req,res)=>{
     const {oldpassword,newpassword}=req?.body
     if(!((validator.isStrongPassword(oldpassword,{minSymbols:1,minLength:8,minNumbers:1})-1) || (validator.isStrongPassword(newpassword,{minSymbols:1,minLength:8,minNumbers:1})-1))){
-        throw new ApiError("Password should contain 8 length with atleast 1 symbol and 1 number")
-    }
+        return res.status(400).json( new ApiError("Password should contain 8 length with atleast 1 symbol and 1 number")
+    )}
     const user=await User.findById(req.user?._id)
     const validpass=user.isPasswordCorrect(oldpassword)
     if(!validpass){
-        throw new ApiError(400,"Incorrect Password")
-    }
+        return res.status(400).json( new ApiError(400,"Incorrect Password")
+    )}
     user.password=newpassword
     await user.save({validateBeforeSave:false})
 
@@ -188,15 +188,15 @@ const editpfp=asynchandler(async(req,res)=>{
     const CoverImagepath=req.file?.path
     console.log(CoverImagepath)
     if (!CoverImagepath){
-        throw new ApiError(400,"Invalid Path of image")
-        
+        return res.status(400).json( new ApiError(400,"Invalid Path of image")
+    )    
     }
     const CoverImage=await uploadfileoncloud(CoverImagepath)
 
     console.log(CoverImage)
     if(!CoverImage.url){
-        throw new ApiError(500,"Error while uploading to cloud")
-    }
+        return res.status(400).json( new ApiError(500,"Error while uploading to cloud")
+    )}
     if (req.user?.CoverImage){
         await removefromcloud(req.user.CoverImage)
     }
@@ -218,16 +218,16 @@ const editpfp=asynchandler(async(req,res)=>{
 const deleteAccount=asynchandler(async(req,res)=>{
     const userid=req.user?._id
     if(!userid){
-        throw new ApiError(400,"Unauthorized request")
-    }
+        return res.status(400).json( new ApiError(400,"Unauthorized request")
+    )}
     try {
         await User.findByIdAndDelete(userid)
         res.status(205).json(
             new ApiResponse(205,{},"Account Deleted Successfully")
         )
     } catch (error) {
-        throw new ApiError(500,"Error deleting the account")
-    }
+        return res.status(400).json( new ApiError(500,"Error deleting the account")
+    )}
 
 });
 
